@@ -42,22 +42,22 @@ def frame(body, title, sub, defs=""):
 
 def metro():
     """Four lines (Cloud, Backend, IoT, Terminal); projects are interchanges, skills are stations."""
-    S = {  # name: (x, y, label dx, label dy, anchor, project)
-        "AWS": (40, 92, 0, -13, "start", 0), "Terraform": (140, 92, 0, -13, "middle", 0),
-        "Arch Linux": (40, 172, 0, -13, "start", 0), "Dotfiles": (105, 172, 0, 26, "middle", 1),
-        "Archeotech": (172, 172, 0, 26, "middle", 1), "LazyTF": (240, 172, -2, -16, "middle", 1),
-        "CR-0W": (330, 172, 0, -16, "middle", 1), "Agents": (410, 172, 0, -13, "end", 0),
-        "Python": (40, 332, 0, -13, "start", 0), "TypeScript": (110, 332, 0, -13, "middle", 0),
-        "Stacks": (175, 332, 0, 26, "middle", 1), "Go": (260, 262, -12, 4, "end", 0),
-        "Lorenzini Track": (330, 262, 14, -14, "start", 1), "Open Data": (410, 262, 0, 22, "end", 0),
-        "Architecture": (200, 132, -12, 14, "end", 0),
-        "Sensors": (40, 412, 0, -13, "start", 0), "MQTT": (110, 412, 0, -13, "middle", 0),
-        "Teaching": (190, 412, 0, -13, "middle", 0),
+    S = {  # name: (x, y, label dx, label dy, anchor, kind) kind: 0 skill, 1 project, 2 hub
+        "Arch Linux": (40, 110, 0, -13, "start", 0), "Dotfiles": (105, 110, 0, 26, "middle", 1),
+        "Archeotech": (172, 110, 0, 26, "middle", 1), "LazyTF": (245, 110, 0, -16, "middle", 1),
+        "CR-0W": (330, 110, 0, -16, "middle", 1), "Agents": (410, 110, 0, -13, "end", 0),
+        "AWS": (40, 190, 0, -13, "start", 0), "Terraform": (105, 190, 0, -13, "middle", 0),
+        "Circle Mobility": (225, 270, -22, 4, "end", 2), "Architecture": (305, 350, 14, 4, "start", 0),
+        "Python": (40, 350, 0, 22, "start", 0), "TypeScript": (95, 350, 0, -13, "middle", 0),
+        "Stacks": (145, 350, 0, 26, "middle", 1), "Go": (185, 310, -12, 4, "end", 0),
+        "Sensors": (40, 430, 0, -13, "start", 0), "MQTT": (105, 430, 0, -13, "middle", 0),
+        "Teaching": (165, 430, 0, -13, "middle", 0),
+        "Lorenzini Track": (330, 270, 0, -16, "middle", 1), "Open Data": (410, 270, 0, 22, "end", 0),
     }
     lines = {  # colour, path through points (stations by name or raw corners)
-        "Cloud": (P["blue"], ["AWS", "Terraform", (160, 92), "Architecture", "LazyTF", "Lorenzini Track"]),
-        "Backend": (P["mauve"], ["Python", "TypeScript", "Stacks", (190, 332), "Go", (330, 192), "CR-0W", "Agents"]),
-        "IoT": (P["sapphire"], ["Sensors", "MQTT", "Teaching", (260, 412), (330, 342), "Lorenzini Track", "Open Data"]),
+        "Cloud": (P["blue"], ["AWS", "Terraform", (145, 190), "Circle Mobility", "Architecture"]),
+        "Backend": (P["mauve"], ["Python", "TypeScript", "Stacks", "Go", "Circle Mobility", (330, 165), "CR-0W", "Agents"]),
+        "IoT": (P["sapphire"], ["Sensors", "MQTT", "Teaching", (225, 430), "Circle Mobility", "Lorenzini Track", "Open Data"]),
         "Terminal": (P["peach"], ["Arch Linux", "Dotfiles", "Archeotech", "LazyTF", "CR-0W"]),
     }
     b = []
@@ -68,11 +68,16 @@ def metro():
         b.append(f'<circle r="4" fill="{P["text"]}"><animateMotion path="{d}" dur="{6 + len(xy)}s" '
                  f'repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;.5;1" calcMode="linear"/></circle>')
     for label, (x, y, dx, dy, anchor, proj) in S.items():
-        if proj:
+        if proj == 2:  # the hub: a large ring where three lines meet
+            b.append(f'<circle cx="{x}" cy="{y}" r="15" fill="{P["base"]}" stroke="{P["text"]}" stroke-width="4"/>'
+                     f'<circle cx="{x}" cy="{y}" r="15" fill="none" stroke="{P["lavender"]}" stroke-opacity=".6">'
+                     f'<animate attributeName="r" values="15;24;15" dur="3s" repeatCount="indefinite"/>'
+                     f'<animate attributeName="stroke-opacity" values=".6;0;.6" dur="3s" repeatCount="indefinite"/></circle>')
+        elif proj:
             b.append(f'<rect x="{x-9}" y="{y-9}" width="18" height="18" rx="9" fill="{P["base"]}" stroke="{P["text"]}" stroke-width="3"/>')
         else:
             b.append(f'<circle cx="{x}" cy="{y}" r="5" fill="{P["base"]}" stroke="{P["text"]}" stroke-width="2.5"/>')
-        b.append(t(x + dx, y + dy, label, 10.5 if proj else 9.5, P["text"] if proj else P["sub"],
+        b.append(t(x + dx, y + dy, label, (10.5, 10.5, 12)[proj] if proj else 9.5, P["text"] if proj else P["sub"],
                    weight="bold" if proj else "normal", anchor=anchor,
                    extra=f' stroke="{P["base"]}" stroke-width="3" paint-order="stroke"'))
     ly = H - 34
@@ -80,8 +85,9 @@ def metro():
         x = 24 + k * 106
         b += [f'<rect x="{x}" y="{ly-8}" width="22" height="7" rx="3.5" fill="{c}"/>', t(x + 28, ly, name, 10, P["sub"])]
     b.append(f'<line x1="22" y1="{H-58}" x2="{W-22}" y2="{H-58}" stroke="{P["s0"]}"/>')
-    n_proj = sum(v[5] for v in S.values())
-    return frame("".join(b), "NETWORK MAP", f"{len(lines)} LINES · {n_proj} PROJECTS · {len(S) - n_proj} SKILLS")
+    n_proj = sum(v[5] == 1 for v in S.values())
+    n_skill = sum(v[5] == 0 for v in S.values())
+    return frame("".join(b), "NETWORK MAP", f"{len(lines)} LINES · {n_proj} PROJECTS · {n_skill} SKILLS")
 
 
 def blueprint():
