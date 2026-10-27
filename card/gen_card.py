@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Build assets/card.svg: a neofetch-style card with an ASCII portrait and dot-leader rows.
+"""Build assets/card.svg: a neofetch-style card with an ASCII portrait and dot-leader rows, animated as a
+terminal session (the prompt types `fastfetch`, then the output flushes row by row).
 
     python3 card/gen_card.py                      # card from the saved portrait.txt
     python3 card/gen_card.py --portrait face.png  # redo portrait.txt from a masked grayscale photo first
@@ -9,6 +10,7 @@ Only the text rows in portrait.txt are kept in the repo, never the photo.
 """
 import argparse
 import pathlib
+import random
 from html import escape
 
 HERE = pathlib.Path(__file__).parent
@@ -52,12 +54,12 @@ SECTIONS = [
 C = dict(bg="#24273a", key="#c6a0f6", sub="#f5a97f", val="#8aadf4", dot="#5b6078", head="#cad3f5",
          top="#c6a0f6", bottom="#7dc4e4")
 COLS, FS, LH, CW = 62, 16, 21, 9.63  # chars per line, font px, line height, monospace advance at 16px
-X0, TOP, PAD = 390, 34, 26
-AFS = 10  # portrait font px, smaller for detail
+TOP, PAD = 34, 26
+CMD = "fastfetch"
 FONT = "ui-monospace,SFMono-Regular,Menlo,Consolas,'DejaVu Sans Mono','Liberation Mono',monospace"
 
 
-def portrait_rows(path, cols=56, max_rows=60):
+def portrait_rows(path, cols=44, max_rows=60):
     """Grayscale photo to density-ramp rows."""
     from PIL import Image, ImageOps
     im = ImageOps.autocontrast(Image.open(path).convert("L"), cutoff=2)
@@ -90,22 +92,10 @@ def tspan(t, c):
     return f'<tspan fill="{c}">{escape(t)}</tspan>'
 
 
-def render(art):
-    L = lines()
-    W = X0 + int(COLS * CW) + PAD + 8
-    H = TOP + LH * len(L) + PAD
-    out = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">',
-           f'<rect width="{W}" height="{H}" rx="14" fill="{C["bg"]}"/>']
-    alh = LH * AFS / FS
-    a0 = TOP - LH * 0.7 + max(0, (H - TOP - PAD - alh * len(art)) / 2) + alh * 0.7
-    out.append(f'<text font-family="{FONT}" font-size="{AFS}px" xml:space="preserve">')
-    for n, row in enumerate(art):
-        if row.strip():
-            t = n / max(1, len(art) - 1)
-            out.append(f'<tspan x="{PAD + 8}" y="{a0 + n*alh:.1f}" fill="{mix(C["top"], C["bottom"], t)}">{escape(row)}</tspan>')
-    out.append(f'</text><text font-family="{FONT}" font-size="{FS}px" xml:space="preserve">')
-    for n, ln in enumerate(L):
-        y = TOP + n * LH
+def info_rows():
+    """Card lines as (row index, svg) on the line grid; blank rows are skipped."""
+    out = []
+    for n, ln in enumerate(lines()):
         if ln[0] == "blank":
             continue
         if ln[0] == "dot":
@@ -130,9 +120,84 @@ def render(art):
             fill = COLS - (1 + len(k) + 1) - len(v) - 2
             assert fill >= 3, f"line too long: {k}"
             body = kt + tspan(" " + "." * fill + " ", C["dot"]) + tspan(v, C["val"])
-        out.append(f'<tspan x="{X0}" y="{y}">{body}</tspan>')
-    out.append("</text></svg>")
-    return "\n".join(out) + "\n"
+        out.append((n, body))
+    return out
+
+
+def render(art, animate=False, output="rows"):
+    """Static card, or animated like a terminal session: a prompt types `fastfetch`, the output flushes
+    and a fresh prompt waits with a blinking cursor. output: rows (one screen row at a time), instant
+    (all at once, as a real terminal), or baud (characters stream out like a slow serial line)."""
+    rng = random.Random(7)  # fixed seed, so the typing rhythm is the same on every build
+    info = info_rows()
+    n_rows = len(lines())
+    x_art = PAD + 8
+    x0 = x_art + round((max(map(len, art)) + 3) * CW)
+    W = x0 + int(COLS * CW) + PAD + 8
+    top = TOP + (LH if animate else 0)  # the animated card gets a prompt row above the output
+    H = top + LH * (n_rows + (2 if animate else 0)) + PAD - LH
+    first = (n_rows - len(art)) // 2  # portrait rows sit on the same line grid, centred
+    grid = {}  # row index -> list of (x, svg)
+    for n, row in enumerate(art):
+        if row.strip():
+            grid.setdefault(first + n, []).append((x_art, tspan(row, mix(C["top"], C["bottom"], n / max(1, len(art) - 1)))))
+    for n, body in info:
+        grid.setdefault(n, []).append((x0, body))
+
+    def text(x, y, body, extra=""):
+        return f'<text x="{x}" y="{y:.1f}" font-family="{FONT}" font-size="{FS}px" xml:space="preserve"{extra}>{body}</text>'
+
+    out = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}">',
+           f'<rect width="{W}" height="{H}" rx="14" fill="{C["bg"]}"/>']
+    if not animate:
+        for r in sorted(grid):
+            out += [text(x, top + r * LH, body) for x, body in grid[r]]
+        return "\n".join(out + ["</svg>"]) + "\n"
+
+    prompt = tspan("nicolas", C["key"]) + tspan("@", C["dot"]) + tspan("rigaudy", C["val"]) + tspan(" ~ ❯ ", C["dot"])
+    plen = 20  # prompt width in characters
+    cur = f'width="{CW:.1f}" height="{FS * 1.2:.1f}" fill="{C["head"]}"'
+    # Idle cursor, then keystrokes at an uneven human pace, then Enter.
+    idle = 1.2
+    times, t = [], idle
+    for _ in CMD:
+        t += rng.uniform(0.06, 0.24)
+        times.append(t)
+    enter = t + 0.45
+    out.append(text(x_art, TOP, prompt))
+    for k, ch in enumerate(CMD):
+        out.append(text(x_art + (plen + k) * CW, TOP, tspan(ch, C["head"]),
+                        f' visibility="hidden"><set attributeName="visibility" to="visible" begin="{times[k]:.2f}s"/'))
+    xs = ";".join(f"{x_art + (plen + k) * CW:.1f}" for k in range(len(CMD) + 1))
+    kt = ";".join(["0"] + [f"{(tk - idle) / (enter - idle):.4f}" for tk in times])
+    out.append(f'<rect x="{x_art + plen * CW:.1f}" y="{TOP - FS * 0.95:.1f}" {cur}>'
+               f'<animate attributeName="opacity" values="1;0" calcMode="discrete" dur="1s" repeatCount="indefinite" end="{idle:.2f}s"/>'
+               f'<animate attributeName="x" values="{xs}" keyTimes="{kt}" calcMode="discrete" begin="{idle:.2f}s" dur="{enter - idle:.2f}s" fill="freeze"/>'
+               f'<set attributeName="visibility" to="hidden" begin="{enter:.2f}s"/></rect>')
+    # Output flushes one screen row at a time, logo and info together, with small stalls.
+    t = enter + 0.25
+    row_w = W - x_art - PAD
+    for i, r in enumerate(sorted(grid)):
+        if output == "rows":
+            t += rng.uniform(0.01, 0.05) + (0.12 if rng.random() < 0.08 else 0)
+        show = f' visibility="hidden"><set attributeName="visibility" to="visible" begin="{t:.2f}s"/'
+        if output == "baud":
+            # The whole row streams left to right through a widening clip, one row after another.
+            dur = 0.11
+            out.append(f'<clipPath id="r{i}"><rect x="{x_art}" y="{top + r * LH - FS:.1f}" width="0" height="{LH}">'
+                       f'<animate attributeName="width" from="0" to="{row_w:.0f}" begin="{t:.2f}s" dur="{dur}s" fill="freeze"/></rect></clipPath>')
+            out.append(f'<g clip-path="url(#r{i})">' + "".join(text(x, top + r * LH, body) for x, body in grid[r]) + "</g>")
+            t += dur
+            continue
+        for x, body in grid[r]:
+            out.append(text(x, top + r * LH, body, show))
+    end = t + 0.3
+    y = top + (n_rows + 1) * LH
+    out.append(text(x_art, y, prompt, f' visibility="hidden"><set attributeName="visibility" to="visible" begin="{end:.2f}s"/'))
+    out.append(f'<rect x="{x_art + plen * CW:.1f}" y="{y - FS * 0.95:.1f}" {cur} visibility="hidden">'
+               f'<set attributeName="visibility" to="visible" begin="{end:.2f}s"/>'
+               f'<animate attributeName="opacity" values="1;0" calcMode="discrete" dur="1s" begin="{end:.2f}s" repeatCount="indefinite"/></rect>')
+    return "\n".join(out + ["</svg>"]) + "\n"
 
 
 if __name__ == "__main__":
@@ -142,4 +207,5 @@ if __name__ == "__main__":
     if a.portrait:
         PORTRAIT.write_text("\n".join(portrait_rows(a.portrait)) + "\n")
     OUT.parent.mkdir(exist_ok=True)
-    OUT.write_text(render(PORTRAIT.read_text().split("\n")[:-1]))
+    art = PORTRAIT.read_text().split("\n")[:-1]
+    OUT.write_text(render(art, animate=True))
