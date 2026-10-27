@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build assets/tcg.svg: a trading card in the style of a Pokemon ex, in the card's Catppuccin palette,
+"""Build assets/widgets/tcg.svg: a trading card in the style of a Pokemon ex, in the card's Catppuccin palette,
 with an animated holo rim, foil, sparkles and a light sweep. The art is the ASCII portrait from portrait.txt.
 
     python3 card/gen_tcg.py
@@ -9,7 +9,7 @@ import random
 from html import escape
 
 HERE = pathlib.Path(__file__).parent
-OUT = HERE.parent / "assets" / "tcg.svg"
+OUT = HERE.parent / "assets" / "widgets" / "tcg.svg"
 ART = (HERE / "portrait.txt").read_text().split("\n")[:-1]
 MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,'DejaVu Sans Mono',monospace"
 SANS = "'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif"
