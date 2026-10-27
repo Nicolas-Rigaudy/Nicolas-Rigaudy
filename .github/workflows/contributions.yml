@@ -1,0 +1,27 @@
+# Refresh the contribution Breakout once a day from the GitHub contribution calendar.
+name: contributions
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Regenerate the widget
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 card/gen_contrib.py --fetch
+      - name: Commit if it changed
+        run: |
+          git diff --quiet && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chg[SVG/JSON]: refresh contribution widget"
+          git push

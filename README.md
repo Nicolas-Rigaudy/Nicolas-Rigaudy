@@ -10,3 +10,5 @@
 - [cdx-manager](https://github.com/AlexAgo83/cdx-manager)
 
 <img src="assets/widgets/metro.svg" width="440" alt="Network map: my stack as four metro lines, Cloud, Backend, IoT and Terminal, meeting at Circle Mobility, with my projects as interchanges."> <img src="assets/widgets/tcg.svg" width="352" alt="Nicolas ex, a trading card. Stage 2 Engineering Manager, evolves from IoT Engineer. Ability Sprint Planning. Attacks MQTT Broadcast and Spawn Agents.">
+
+<img src="assets/widgets/contributions.svg" width="796" alt="A year of my contributions as a scrolling isometric Breakout: the bricks are the days I committed, taller for busier days.">
