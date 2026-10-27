@@ -8,3 +8,5 @@
 
 #### Contributions
 - [cdx-manager](https://github.com/AlexAgo83/cdx-manager)
+
+<img src="assets/tcg.svg" width="360" alt="Nicolas ex, a trading card. Stage 2 Engineering Manager, evolves from IoT Engineer. Ability Sprint Planning. Attacks MQTT Broadcast and Spawn Agents.">
