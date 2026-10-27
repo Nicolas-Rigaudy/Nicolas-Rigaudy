@@ -6,6 +6,4 @@
 <tr><td width="50%" valign="top"><a href="https://github.com/Nicolas-Rigaudy/obsidian-stacks"><img src="assets/obsidian-stacks.png" alt="Stacks"></a><br><b><a href="https://github.com/Nicolas-Rigaudy/obsidian-stacks">Stacks</a></b><br>An Obsidian plugin that turns your notes into a shelf. Manage books, games, films and series by category and status.</td><td width="50%" valign="top"><a href="https://github.com/Nicolas-Rigaudy/archeotech-dotfiles"><img src="assets/archeotech-dotfiles.png" alt="Archeotech dotfiles"></a><br><b><a href="https://github.com/Nicolas-Rigaudy/archeotech-dotfiles">Archeotech dotfiles</a></b><br>My Arch Linux setup on MangoWC, managed with GNU Stow.</td></tr>
 </table>
 
-<img src="assets/widgets/metro.svg" width="54%" alt="Network map: my stack as four metro lines, Cloud, Backend, IoT and Terminal, meeting at Circle Mobility, with my projects as interchanges."><img src="assets/widgets/tcg.svg" width="43%" alt="Nicolas ex, a trading card. Stage 2 Engineering Manager, evolves from IoT Engineer. Ability Sprint Planning. Attacks MQTT Broadcast and Spawn Agents.">
-
-<img src="assets/widgets/contributions.svg" width="97%" alt="A year of my contributions as a scrolling isometric Breakout: the bricks are the days I committed, taller for busier days.">
+<p align="center"><img src="assets/widgets/metro.svg" width="62%" alt="Network map: my stack as four metro lines, Cloud, Backend, IoT and Terminal, meeting at Circle Mobility, with my projects as interchanges."></p>

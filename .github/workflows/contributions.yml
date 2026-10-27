@@ -1,9 +1,8 @@
-# Refresh the contribution Breakout once a day from the GitHub contribution calendar.
+# Refresh the contribution Breakout from the GitHub contribution calendar.
+# The widget is off the README for now, so the daily schedule is off; run it by hand to refresh.
 name: contributions
 
 on:
-  schedule:
-    - cron: "17 4 * * *"
   workflow_dispatch:
 
 permissions:
